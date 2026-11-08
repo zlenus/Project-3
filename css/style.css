@@ -32,7 +32,7 @@ svg { width:100%; height:auto; display:block; }
 .slider .ticks { display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted); }
 #count { margin:8px 0 2px; }
 .state { transition:opacity .25s; }
-.excluded { fill:#d9dde1; stroke:#fff; stroke-width:.7; }
+.excluded { fill:#000000; stroke:#fff; stroke-width:.7; }
 .state.dim { opacity:.25; }
 .state.hit { fill:#8e44ad; }
 .state.sel { fill:#ffd400; opacity:1; }   /* selected state stays yellow and visible */
