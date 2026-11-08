@@ -41,13 +41,8 @@
 const KEY = "travel_out_2020";
 const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 
-// Values listed in the panel when a state is clicked
-const DETAILS = [
-  {key:"travel_out_2020", label:"Traveled out of state", fmt:d => d + "%"},
-  {key:"pct_women_noclinic_2020", label:"Women 15–44 in a county with no clinic", fmt:d => d + "%"},
-  {key:"pct_counties_noclinic_2020", label:"Counties with no clinic", fmt:d => d + "%"},
-  {key:"clinics_2020", label:"Abortion clinics", fmt:d3.format(",")}
-];
+// Columns whose US medians are mentioned in the panel
+const MEDIAN_KEYS = ["pct_women_noclinic_2020", "clinics_2020"];
 
 let byName = new Map(), medians = {}, ranked = [], selected = null;
 
@@ -72,17 +67,14 @@ function drawPanel(){
   if (!selected) { panel.html('<p class="empty">Click a state on the map to see its details.</p>'); return; }
   const r = byName.get(selected);
   const rank = ranked.findIndex(d => d.state === selected) + 1;
-  const rows = DETAILS.map(m => `<tr><td>${m.label}</td>
-    <td class="v">${r[m.key] == null ? "No data" : m.fmt(r[m.key])}<small>(median ${m.fmt(medians[m.key])})</small></td></tr>`).join("");
   panel.html(`<button class="close" aria-label="Close">×</button>
     <h2>${selected}</h2>
     <p class="big">${r[KEY]}%</p>
     <p class="bigLabel">${LABEL}</p>
     <p class="rank">Ranks <b>${rank}</b> of ${ranked.length} (1 = highest)</p>
-    <table>${rows}</table>
     <h3>Access vs. travel</h3>
     <p class="mini-note">${accessSentence(r)}</p>
-    <svg id="mini" viewBox="0 0 340 200" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
+    <svg id="mini" viewBox="0 0 340 250" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
   panel.select(".close").on("click", () => select(null));
   drawMini();
 }
@@ -123,11 +115,13 @@ function accessSentence(r){
   if (Math.abs(diff) <= 5) compare = "about what the trend across states would predict";
   else if (diff > 0) compare = `more than the ${expected}% the trend across states would predict`;
   else compare = `less than the ${expected}% the trend across states would predict`;
-  return `In ${selected}, <b>${x}%</b> of women aged 15–44 live in a county with no clinic (US median: ${medians[X_KEY]}%), and <b>${y}%</b> of residents traveled out of state, ${compare}. Across all states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
+  const n = r.clinics_2020;
+  const clinics = n == null ? "" : `${selected} has <b>${n}</b> abortion clinic${n === 1 ? "" : "s"} (US median: ${medians.clinics_2020}), and `;
+  return `${clinics}<b>${x}%</b> of its women aged 15–44 live in a county with no clinic (US median: ${medians[X_KEY]}%). <b>${y}%</b> of residents traveled out of state, ${compare}. Across all states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
 }
 
 function drawMini(){
-  const W = 340, H = 200, m = {top:8, right:12, bottom:34, left:42};
+  const W = 340, H = 250, m = {top:8, right:12, bottom:34, left:42};
   const svg = d3.select("#mini");
   const x = d3.scaleLinear([0, 100], [m.left, W - m.right]);
   const y = d3.scaleLinear([0, 100], [H - m.bottom, m.top]);
@@ -164,7 +158,7 @@ Promise.all([
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json")
 ]).then(([rows, us]) => {
   byName = new Map(rows.map(d => [d.state, d]));
-  DETAILS.forEach(m => medians[m.key] = d3.median(rows, d => d[m.key]));
+  MEDIAN_KEYS.forEach(k => medians[k] = d3.median(rows, d => d[k]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
   fit = computeFit(rows);
 
