@@ -83,7 +83,9 @@ function applyThreshold(){
     .classed("hit", d => active && byName.get(d.properties.name)[KEY] >= threshold)
     .classed("dim", d => active && byName.get(d.properties.name)[KEY] < threshold);
   const n = matches.length;
-  d3.select("#count").html(`<b>${n}</b> of ${ranked.length} states ${n === 1 ? "has" : "have"} at least <b>${threshold}%</b> of residents leaving the state for abortion care`);
+  d3.select("#count").html(active
+    ? `<b>${n}</b> of ${ranked.length} states ${n === 1 ? "has" : "have"} at least <b>${threshold}%</b> of residents leaving the state for abortion care`
+    : "Drag the slider to highlight states by how many residents left for abortion care");
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
