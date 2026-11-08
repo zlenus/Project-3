@@ -37,6 +37,17 @@ svg { width:100%; height:auto; display:block; }
 .state.hit { fill:#8e44ad; }
 .state.sel { fill:#ffd400; opacity:1; }   /* selected state stays yellow and visible */
 
+/* Access vs. travel mini chart in the panel */
+#panel h3 { font-size:1.05rem; margin:20px 0 4px; padding-top:14px; border-top:1px solid var(--line); }
+#panel .mini-note { font-size:.92rem; line-height:1.45; margin:0 0 8px; }
+#mini { width:100%; height:auto; }
+.mini-dot { fill:#9fb3c8; stroke:#fff; stroke-width:.8; cursor:pointer; }
+.mini-dot:hover { fill:#3a7cb8; }
+.mini-dot.sel { fill:#ffd400; stroke:var(--ink); stroke-width:2; }
+.axis text { font-size:10px; fill:var(--muted); }
+.axis-title { font-size:10.5px; fill:var(--muted); }
+.trend { stroke:#9aa5b1; stroke-dasharray:4 3; stroke-width:1.2; }
+
 .note { font-size:.85rem; color:var(--muted); margin-top:10px; }
 section { margin-top:28px; line-height:1.55; }
 section h2 { font-size:1.15rem; margin:24px 0 6px; }

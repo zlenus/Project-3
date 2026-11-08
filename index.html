@@ -44,6 +44,7 @@ const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 // Values listed in the panel when a state is clicked
 const DETAILS = [
   {key:"travel_out_2020", label:"Traveled out of state", fmt:d => d + "%"},
+  {key:"pct_women_noclinic_2020", label:"Women 15–44 in a county with no clinic", fmt:d => d + "%"},
   {key:"pct_counties_noclinic_2020", label:"Counties with no clinic", fmt:d => d + "%"},
   {key:"clinics_2020", label:"Abortion clinics", fmt:d3.format(",")}
 ];
@@ -78,8 +79,12 @@ function drawPanel(){
     <p class="big">${r[KEY]}%</p>
     <p class="bigLabel">${LABEL}</p>
     <p class="rank">Ranks <b>${rank}</b> of ${ranked.length} (1 = highest)</p>
-    <table>${rows}</table>`);
+    <table>${rows}</table>
+    <h3>Access vs. travel</h3>
+    <p class="mini-note">${accessSentence(r)}</p>
+    <svg id="mini" viewBox="0 0 340 230" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
   panel.select(".close").on("click", () => select(null));
+  drawMini();
 }
 
 // ---------- Threshold slider ----------
@@ -96,6 +101,57 @@ function applyThreshold(){
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
+// ---------- Access vs. travel (shown in the panel) ----------
+const X_KEY = "pct_women_noclinic_2020";
+let fit = null;   // trend line and correlation, computed once after the data loads
+
+function computeFit(rows){
+  const pts = rows.filter(d => d[X_KEY] != null && d[KEY] != null);
+  const mx = d3.mean(pts, d => d[X_KEY]), my = d3.mean(pts, d => d[KEY]);
+  const sxy = d3.sum(pts, d => (d[X_KEY] - mx) * (d[KEY] - my));
+  const sxx = d3.sum(pts, d => (d[X_KEY] - mx) ** 2);
+  const syy = d3.sum(pts, d => (d[KEY] - my) ** 2);
+  const slope = sxy / sxx;
+  return { pts, slope, intercept: my - slope * mx, r: sxy / Math.sqrt(sxx * syy) };
+}
+
+function accessSentence(r){
+  const x = r[X_KEY], y = r[KEY];
+  const expected = Math.max(0, Math.round(fit.intercept + fit.slope * x));
+  const diff = y - expected;
+  let compare;
+  if (Math.abs(diff) <= 5) compare = "about what the trend across states would predict";
+  else if (diff > 0) compare = `more than the ${expected}% the trend across states would predict`;
+  else compare = `less than the ${expected}% the trend across states would predict`;
+  return `In ${selected}, <b>${x}%</b> of women aged 15–44 live in a county with no clinic (US median: ${medians[X_KEY]}%), and <b>${y}%</b> of residents traveled out of state, ${compare}. Across all states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
+}
+
+function drawMini(){
+  const W = 340, H = 230, m = {top:10, right:12, bottom:38, left:42};
+  const svg = d3.select("#mini");
+  const x = d3.scaleLinear([0, 100], [m.left, W - m.right]);
+  const y = d3.scaleLinear([0, 100], [H - m.bottom, m.top]);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.bottom})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
+  svg.append("g").attr("class", "axis").attr("transform", `translate(${m.left},0)`)
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + "%"));
+  svg.append("text").attr("class", "axis-title").attr("x", (m.left + W - m.right) / 2).attr("y", H - 4)
+    .attr("text-anchor", "middle").text("Women in a county with no clinic");
+  svg.append("text").attr("class", "axis-title").attr("transform", "rotate(-90)")
+    .attr("x", -(m.top + H - m.bottom) / 2).attr("y", 11).attr("text-anchor", "middle").text("Traveled out of state");
+  const x0 = Math.max(0, -fit.intercept / fit.slope);
+  svg.append("line").attr("class", "trend")
+    .attr("x1", x(x0)).attr("y1", y(fit.intercept + fit.slope * x0))
+    .attr("x2", x(100)).attr("y2", y(fit.intercept + fit.slope * 100));
+  svg.append("g").selectAll("circle").data(fit.pts).join("circle")
+    .attr("class", d => d.state === selected ? "mini-dot sel" : "mini-dot")
+    .attr("r", d => d.state === selected ? 7 : 4)
+    .attr("cx", d => x(d[X_KEY])).attr("cy", d => y(d[KEY]))
+    .on("click", (ev, d) => select(d.state))
+    .append("title").text(d => `${d.state}: ${d[X_KEY]}% no clinic nearby, ${d[KEY]}% traveled out`);
+  svg.selectAll("circle.sel").raise();
+}
+
 function select(name){
   selected = (name === selected) ? null : name;
   gStates.selectAll("path").classed("sel", d => d.properties.name === selected)
@@ -110,6 +166,7 @@ Promise.all([
   byName = new Map(rows.map(d => [d.state, d]));
   DETAILS.forEach(m => medians[m.key] = d3.median(rows, d => d[m.key]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
+  fit = computeFit(rows);
 
   const states = topojson.feature(us, us.objects.states).features.filter(f => byName.has(f.properties.name));
   gStates.selectAll("path").data(states).join("path")
