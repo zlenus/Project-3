@@ -18,10 +18,10 @@
   <p id="count"></p>
 </div>
 <div class="wrap">
-  <div><svg id="map" viewBox="0 0 960 600" role="img" aria-label="US map of out-of-state travel for abortion care"></svg></div>
+  <div><svg id="map" viewBox="0 0 960 640" role="img" aria-label="US map of out-of-state travel for abortion care"></svg></div>
   <div id="panel" aria-live="polite"><p class="empty">Click a state on the map to see its details.</p></div>
 </div>
-<p class="note">Source: Guttmacher Institute.</p>
+<p class="note">Source: Guttmacher Institute. The District of Columbia is shown in gray and excluded from the analysis: as a single city, its out-of-state travel mostly reflects short trips into Maryland or Virginia rather than a lack of local clinics.</p>
 
 <section>
   <h2>Team members</h2>
@@ -47,7 +47,7 @@ const color = d3.scaleSequential([0, 100], d3.interpolateBlues);
 const gStates = map.append("g");
 
 function drawLegend(){
-  const w = 320, g = map.append("g").attr("class", "legend").attr("transform", "translate(560,560)");
+  const w = 320, g = map.append("g").attr("class", "legend").attr("transform", "translate(560,602)");
   const grad = g.append("defs").append("linearGradient").attr("id", "grad");
   d3.range(0, 1.01, .1).forEach(t => grad.append("stop").attr("offset", t * 100 + "%").attr("stop-color", color(t * 100)));
   g.append("text").attr("y", -6).text(LABEL);
