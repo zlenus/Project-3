@@ -33,6 +33,10 @@ svg { width:100%; height:auto; display:block; }
 #count { margin:8px 0 2px; }
 .state { transition:opacity .25s; }
 .excluded { fill:url(#dots); stroke:#7a8591; stroke-width:1; }
+.dc-marker { cursor:pointer; }
+.dc-marker.sel .excluded { fill:#ffd400; stroke:var(--ink); stroke-width:2; }
+.mini-dot.dc-ref { fill:#fff; stroke:#5b6672; stroke-width:1.5; stroke-dasharray:2 2; }
+.mini-dot.dc-ref.sel { fill:#ffd400; stroke:var(--ink); stroke-dasharray:3 2; }
 .dc-leader { stroke:#7a8591; stroke-width:1; }
 .dc-label { font-size:12px; fill:var(--muted); }
 .state.dim { opacity:.25; }

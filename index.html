@@ -39,7 +39,7 @@ const KEY = "travel_out_2020";
 const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 
 
-let byName = new Map(), ranked = [], selected = null;
+let dcRow = null, byName = new Map(), ranked = [], selected = null;
 
 const map = d3.select("#map");
 const path = d3.geoPath(d3.geoAlbersUsa().scale(1250).translate([480, 290]));
@@ -60,15 +60,16 @@ function drawLegend(){
 function drawPanel(){
   const panel = d3.select("#panel");
   if (!selected) { panel.html('<p class="empty">Click a state on the map to see its details.</p>'); return; }
-  const r = byName.get(selected);
+  const isDC = selected === EXCLUDED;
+  const r = isDC ? dcRow : byName.get(selected);
   const rank = ranked.findIndex(d => d.state === selected) + 1;
   panel.html(`<button class="close" aria-label="Close">×</button>
     <h2>${selected}</h2>
     <p class="big">${r[KEY]}%</p>
     <p class="bigLabel">${LABEL}</p>
-    <p class="rank">Ranks <b>${rank}</b> of 50 states (1 = highest)</p>
+    <p class="rank">${isDC ? "Not ranked: excluded from the analysis" : `Ranks <b>${rank}</b> of 50 states (1 = highest)`}</p>
     <h3>Access vs. travel</h3>
-    <p class="mini-note">${accessSentence(r)}</p>
+    <p class="mini-note">${isDC ? dcSentence(r) : accessSentence(r)}</p>
     <svg id="mini" viewBox="0 0 340 250" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
   panel.select(".close").on("click", () => select(null));
   drawMini();
@@ -101,6 +102,11 @@ function computeFit(rows){
   const syy = d3.sum(pts, d => (d[KEY] - my) ** 2);
   const slope = sxy / sxx;
   return { pts, slope, intercept: my - slope * mx, r: sxy / Math.sqrt(sxx * syy) };
+}
+
+function dcSentence(r){
+  const n = r.clinics_2020;
+  return `DC has <b>${n}</b> abortion clinic${n === 1 ? "" : "s"}, and <b>${r[X_KEY]}%</b> of its women aged 15–44 live in a county with no clinic. Even so, <b>${r[KEY]}%</b> of residents traveled out of state, mostly short trips into Maryland or Virginia. Its point (dashed outline) is shown for reference only and is not part of the trend line or the correlation.`;
 }
 
 function accessSentence(r){
@@ -139,6 +145,14 @@ function drawMini(){
     .attr("cx", d => x(d[X_KEY])).attr("cy", d => y(d[KEY]))
     .on("click", (ev, d) => select(d.state))
     .append("title").text(d => `${d.state}: ${d[X_KEY]}% no clinic nearby, ${d[KEY]}% traveled out`);
+  if (dcRow) {
+    const isSel = selected === EXCLUDED;
+    svg.append("circle").attr("class", isSel ? "mini-dot dc-ref sel" : "mini-dot dc-ref")
+      .attr("r", isSel ? 7 : 5)
+      .attr("cx", x(dcRow[X_KEY])).attr("cy", y(dcRow[KEY]))
+      .on("click", () => select(EXCLUDED))
+      .append("title").text(`DC (excluded): ${dcRow[X_KEY]}% no clinic nearby, ${dcRow[KEY]}% traveled out`);
+  }
   svg.selectAll("circle.sel").raise();
 }
 
@@ -146,6 +160,7 @@ function select(name){
   selected = (name === selected) ? null : name;
   gStates.selectAll("path").classed("sel", d => d.properties.name === selected)
     .filter(".sel").raise();
+  d3.select(".dc-marker").classed("sel", selected === EXCLUDED);
   drawPanel();
 }
 
@@ -157,6 +172,7 @@ Promise.all([
 ]).then(([rows, us]) => {
   // DC is excluded: as a single city, its out-of-state travel mostly reflects
   // short trips into Maryland or Virginia rather than a lack of local clinics.
+  dcRow = rows.find(d => d.state === EXCLUDED);   // kept for reference only
   rows = rows.filter(d => d.state !== EXCLUDED);
   byName = new Map(rows.map(d => [d.state, d]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
@@ -182,7 +198,8 @@ Promise.all([
   const label = gDC.append("text").attr("class", "dc-label").attr("text-anchor", "middle").attr("x", mx).attr("y", my + 23);
   label.append("tspan").attr("x", mx).text("DC");
   label.append("tspan").attr("x", mx).attr("dy", 13).text("(excluded)");
-  gDC.append("title").text("District of Columbia (excluded from this analysis)");
+  gDC.append("title").text("District of Columbia (excluded from this analysis). Click for details.");
+  gDC.on("click", () => select(EXCLUDED));
   gStates.selectAll("path").data(states).join("path")
     .attr("class", "state").attr("d", path)
     .attr("fill", d => color(byName.get(d.properties.name)[KEY]))
