@@ -3,25 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How Limited Clinic Access Shaped Out-of-State Travel for Abortion Care?</title>
+<title>Does the lack of nearby abortion clinics push people to leave their state for care?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<h1>How Limited Clinic Access Shaped Out-of-State Travel for Abortion Care</h1>
-<p class="sub">The map shows the share of each state’s residents who traveled to another state for an abortion in 2020. Drag the slider below the map to highlight the states above a chosen percentage, and click a state to see its details.</p>
+<h1>Does The Lack Of Nearby Abortion Clinics Push People To Leave Their State For Care?</h1>
+<p class="sub">The map shows the share of each state’s residents who traveled to another state for an abortion in 2020. Use the slider to highlight states at or above a chosen percentage, and click a state to see its details.</p>
+<div class="slider">
+  <label for="threshold">Highlight states where at least <span id="tval">0</span>% of residents traveled out of state</label>
+  <input id="threshold" type="range" min="0" max="100" step="1" value="0">
+  <div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+  <p id="count"></p>
+  <p id="matchList"></p>
+</div>
 <div class="wrap">
-  <div>
-    <svg id="map" viewBox="0 0 960 600" role="img" aria-label="US map of out-of-state travel for abortion care"></svg>
-    <div class="slider">
-      <label for="threshold">Highlight states where at least <span id="tval">0</span>% of residents traveled out of state</label>
-      <input id="threshold" type="range" min="0" max="100" step="1" value="0">
-      <div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
-      <p id="count"></p>
-      <p id="matchList"></p>
-    </div>
-  </div>
+  <div><svg id="map" viewBox="0 0 960 600" role="img" aria-label="US map of out-of-state travel for abortion care"></svg></div>
   <div id="panel" aria-live="polite"><p class="empty">Click a state on the map to see its details.</p></div>
 </div>
 <p class="note">Source: Guttmacher Institute.</p>

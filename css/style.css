@@ -26,12 +26,12 @@ svg { width:100%; height:auto; display:block; }
 #panel td.v small { font-weight:400; color:var(--muted); font-size:.75rem; margin-left:6px; }
 
 /* Threshold slider */
-.slider { margin:14px 0 0; }
+.slider { width:min(720px, 100%); margin:4px auto 18px; text-align:center; }
 .slider label { display:block; font-weight:600; margin-bottom:6px; }
 .slider input[type=range] { width:100%; accent-color:#2b6b8f; }
 .slider .ticks { display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted); }
-#count { margin:8px 0 2px; }
-#matchList { font-size:.9rem; color:var(--muted); margin:0; }
+#count { margin:8px 0 2px; min-height:1.4em; }
+#matchList { font-size:.9rem; color:var(--muted); margin:0; min-height:2.8em; }   /* reserve space so the map does not jump */
 .state { transition:opacity .25s; }
 .state.dim { opacity:.25; }
 .state.hit { fill:#8e44ad; }
