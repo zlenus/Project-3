@@ -12,11 +12,10 @@
 <h1>Does The Lack Of Nearby Abortion Clinics Push People To Leave Their State For Care?</h1>
 <p class="sub">The map shows the share of each state’s residents who traveled to another state for an abortion in 2020. Use the slider to highlight states at or above a chosen percentage, and click a state to see its details.</p>
 <div class="slider">
-  <label for="threshold">Highlight states where at least <span id="tval">0</span>% of residents traveled out of state</label>
+  <label for="threshold">Highlight states by share of residents who traveled out of state</label>
   <input id="threshold" type="range" min="0" max="100" step="1" value="0">
   <div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
   <p id="count"></p>
-  <p id="matchList"></p>
 </div>
 <div class="wrap">
   <div><svg id="map" viewBox="0 0 960 600" role="img" aria-label="US map of out-of-state travel for abortion care"></svg></div>
@@ -83,9 +82,8 @@ function applyThreshold(){
   gStates.selectAll("path")
     .classed("hit", d => active && byName.get(d.properties.name)[KEY] >= threshold)
     .classed("dim", d => active && byName.get(d.properties.name)[KEY] < threshold);
-  d3.select("#tval").text(threshold);
-  d3.select("#count").html(active ? `<b>${matches.length}</b> of ${ranked.length} states` : "");
-  d3.select("#matchList").text(active && matches.length ? matches.map(d => `${d.state} (${d[KEY]}%)`).join(", ") : "");
+  const n = matches.length;
+  d3.select("#count").html(`<b>${n}</b> of ${ranked.length} states ${n === 1 ? "has" : "have"} at least <b>${threshold}%</b> of residents leaving the state for abortion care`);
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
