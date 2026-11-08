@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Does the lack of nearby abortion clinics push people to leave their state for care?</title>
+<title>Limited Clinic Access Shaped Out-of-State Travel for Abortion Care</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<h1>Does The Lack Of Nearby Abortion Clinics Push People To Leave Their State For Care?</h1>
+<h1>Limited Clinic Access Shaped Out-of-State Travel for Abortion Care in 2020</h1>
 <p class="sub">The map shows the share of each state’s residents who traveled to another state for an abortion in 2020. Use the slider to highlight states at or above a chosen percentage, and click a state to see its details.</p>
 <div class="slider">
   <label for="threshold">Highlight states by share of residents who traveled out of state</label>
@@ -34,7 +34,7 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
-// The map is colored by this one measure
+
 const KEY = "travel_out_2020";
 const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 
@@ -74,10 +74,9 @@ function drawPanel(){
   drawMini();
 }
 
-// ---------- Threshold slider ----------
 let threshold = 0;
 function applyThreshold(){
-  const active = threshold > 0;   // at 0 every state qualifies, so show the normal map
+  const active = threshold > 0;   // at 0 every state qualifies
   const matches = ranked.filter(d => d[KEY] >= threshold);
   gStates.selectAll("path")
     .classed("hit", d => active && byName.get(d.properties.name)[KEY] >= threshold)
@@ -89,9 +88,8 @@ function applyThreshold(){
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
-// ---------- Access vs. travel (shown in the panel) ----------
 const X_KEY = "pct_women_noclinic_2020";
-let fit = null;   // trend line and correlation, computed once after the data loads
+let fit = null;   // trend line and correlation
 
 function computeFit(rows){
   const pts = rows.filter(d => d[X_KEY] != null && d[KEY] != null);
