@@ -11,7 +11,7 @@
   * { box-sizing:border-box; }
   body { margin:0; padding:24px 32px; font-family:"Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); background:var(--bg); }
   h1 { font-size:1.7rem; margin:0 0 4px; }
-  .sub { color:var(--muted); margin:0 0 18px; max-width:70ch; }
+  .sub { color:var(--muted); margin:0 0 18px; }
   .wrap { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr); gap:28px; align-items:start; }
   svg { width:100%; height:auto; display:block; }
   .state { stroke:#fff; stroke-width:.7; cursor:pointer; }
@@ -40,7 +40,9 @@
   #count { margin:8px 0 2px; }
   #matchList { font-size:.9rem; color:var(--muted); margin:0; }
   .state { transition:opacity .25s; }
-  .state.dim { opacity:.15; }
+  .state.dim { opacity:.25; }
+  .state.hit { fill:#8e44ad; }
+  .state.sel { fill:#ffd400; opacity:1; }   /* selected state stays yellow and visible */
 
   .note { font-size:.85rem; color:var(--muted); margin-top:10px; }
   section { max-width:72ch; margin-top:28px; line-height:1.55; }
@@ -50,14 +52,14 @@
 </head>
 <body>
 <h1>Does The Lack Of Nearby Abortion Clinics Push People To Leave Their State For Care?</h1>
-<p class="sub">The map shows the share of each state’s residents who traveled out of state for an abortion in 2020. Drag the slider below the map to highlight the states above a travel threshold, and click a state to see its details.</p>
+<p class="sub">The map shows how many of each state’s residents traveled to another state for an abortion in 2020. Drag the slider below the map to highlight the states above a chosen number, and click a state to see its details.</p>
 <div class="wrap">
   <div>
     <svg id="map" viewBox="0 0 960 600" role="img" aria-label="US map of out-of-state travel for abortion care"></svg>
     <div class="slider">
-      <label for="threshold">Highlight states where at least <span id="tval">0</span>% of residents traveled out of state</label>
-      <input id="threshold" type="range" min="0" max="100" step="1" value="0">
-      <div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+      <label for="threshold">Highlight states where at least <span id="tval">0</span> residents traveled out of state</label>
+      <input id="threshold" type="range" min="0" max="12000" step="100" value="0">
+      <div class="ticks"><span>0</span><span>3,000</span><span>6,000</span><span>9,000</span><span>12,000</span></div>
       <p id="count"></p>
       <p id="matchList"></p>
     </div>
@@ -78,12 +80,14 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 // The map is colored by this one measure
-const KEY = "travel_out_2020";
-const LABEL = "% of residents who traveled out of state, 2020";
+const KEY = "traveled_out_n_2020";
+const LABEL = "Residents who traveled out of state for an abortion, 2020";
+const fmtN = d3.format(",");
 
 // Values listed in the panel when a state is clicked
 const DETAILS = [
-  {key:"travel_out_2020", label:"Traveled out of state", fmt:d => d + "%"},
+  {key:"traveled_out_n_2020", label:"Residents who traveled out of state", fmt:fmtN},
+  {key:"travel_out_2020", label:"Share of residents who traveled out", fmt:d => d + "%"},
   {key:"pct_counties_noclinic_2020", label:"Counties with no clinic", fmt:d => d + "%"},
   {key:"clinics_2020", label:"Abortion clinics", fmt:d3.format(",")}
 ];
@@ -92,17 +96,18 @@ let byName = new Map(), medians = {}, ranked = [], selected = null;
 
 const map = d3.select("#map");
 const path = d3.geoPath(d3.geoAlbersUsa().scale(1250).translate([480, 290]));
-const color = d3.scaleSequential([0, 100], d3.interpolateBlues);
+let color;   // set once the data has loaded
 const gStates = map.append("g");
 
 function drawLegend(){
   const w = 320, g = map.append("g").attr("class", "legend").attr("transform", "translate(560,560)");
   const grad = g.append("defs").append("linearGradient").attr("id", "grad");
-  d3.range(0, 1.01, .1).forEach(t => grad.append("stop").attr("offset", t * 100 + "%").attr("stop-color", color(t * 100)));
+  const max = color.domain()[1];
+  d3.range(0, 1.01, .1).forEach(t => grad.append("stop").attr("offset", t * 100 + "%").attr("stop-color", color(max * t * t)));
   g.append("text").attr("y", -6).text(LABEL);
   g.append("rect").attr("width", w).attr("height", 10).attr("fill", "url(#grad)");
   g.append("g").attr("transform", "translate(0,10)")
-    .call(d3.axisBottom(d3.scaleLinear([0, 100], [0, w])).ticks(5).tickFormat(d => d + "%").tickSize(4))
+    .call(d3.axisBottom(d3.scaleSqrt([0, max], [0, w])).tickValues([0, 1000, 3000, 6000, 10000].filter(v => v <= max)).tickFormat(fmtN).tickSize(4))
     .select(".domain").remove();
 }
 
@@ -115,9 +120,9 @@ function drawPanel(){
     <td class="v">${r[m.key] == null ? "No data" : m.fmt(r[m.key])}<small>US median: ${m.fmt(medians[m.key])}</small></td></tr>`).join("");
   panel.html(`<button class="close" aria-label="Close">×</button>
     <h2>${selected}</h2>
-    <p class="big">${r[KEY]}%</p>
+    <p class="big">${fmtN(r[KEY])}</p>
     <p class="bigLabel">${LABEL}</p>
-    <p class="rank">Ranks <b>${rank}</b> of ${ranked.length} (1 = highest)</p>
+    <p class="rank">Ranks <b>${rank}</b> of ${ranked.length} (1 = highest) · ${r.travel_out_2020}% of the state’s residents who had an abortion</p>
     <table>${rows}</table>`);
   panel.select(".close").on("click", () => select(null));
 }
@@ -125,11 +130,14 @@ function drawPanel(){
 // ---------- Threshold slider ----------
 let threshold = 0;
 function applyThreshold(){
+  const active = threshold > 0;   // at 0 every state qualifies, so show the normal map
   const matches = ranked.filter(d => d[KEY] >= threshold);
-  gStates.selectAll("path").classed("dim", d => byName.get(d.properties.name)[KEY] < threshold);
-  d3.select("#tval").text(threshold);
-  d3.select("#count").html(`<b>${matches.length}</b> of ${ranked.length} states`);
-  d3.select("#matchList").text(threshold > 0 && matches.length ? matches.map(d => `${d.state} (${d[KEY]}%)`).join(", ") : "");
+  gStates.selectAll("path")
+    .classed("hit", d => active && byName.get(d.properties.name)[KEY] >= threshold)
+    .classed("dim", d => active && byName.get(d.properties.name)[KEY] < threshold);
+  d3.select("#tval").text(fmtN(threshold));
+  d3.select("#count").html(active ? `<b>${matches.length}</b> of ${ranked.length} states` : "");
+  d3.select("#matchList").text(active && matches.length ? matches.map(d => `${d.state} (${fmtN(d[KEY])})`).join(", ") : "");
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
@@ -147,6 +155,7 @@ Promise.all([
   byName = new Map(rows.map(d => [d.state, d]));
   DETAILS.forEach(m => medians[m.key] = d3.median(rows, d => d[m.key]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
+  color = d3.scaleSequentialSqrt([0, d3.max(rows, d => d[KEY])], d3.interpolateBlues);
 
   const states = topojson.feature(us, us.objects.states).features.filter(f => byName.has(f.properties.name));
   gStates.selectAll("path").data(states).join("path")
