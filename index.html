@@ -41,10 +41,8 @@
 const KEY = "travel_out_2020";
 const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 
-// Columns whose US medians are mentioned in the panel
-const MEDIAN_KEYS = ["pct_women_noclinic_2020", "clinics_2020"];
 
-let byName = new Map(), medians = {}, ranked = [], selected = null;
+let byName = new Map(), ranked = [], selected = null;
 
 const map = d3.select("#map");
 const path = d3.geoPath(d3.geoAlbersUsa().scale(1250).translate([480, 290]));
@@ -116,8 +114,8 @@ function accessSentence(r){
   else if (diff > 0) compare = `more than the ${expected}% the trend across states would predict`;
   else compare = `less than the ${expected}% the trend across states would predict`;
   const n = r.clinics_2020;
-  const clinics = n == null ? "" : `${selected} has <b>${n}</b> abortion clinic${n === 1 ? "" : "s"} (US median: ${medians.clinics_2020}), and `;
-  return `${clinics}<b>${x}%</b> of its women aged 15–44 live in a county with no clinic (US median: ${medians[X_KEY]}%). <b>${y}%</b> of residents traveled out of state, ${compare}. Across all states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
+  const clinics = n == null ? "" : `${selected} has <b>${n}</b> abortion clinic${n === 1 ? "" : "s"}, and `;
+  return `${clinics}<b>${x}%</b> of its women aged 15–44 live in a county with no clinic. <b>${y}%</b> of residents traveled out of state, ${compare}. Across all states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
 }
 
 function drawMini(){
@@ -158,7 +156,6 @@ Promise.all([
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json")
 ]).then(([rows, us]) => {
   byName = new Map(rows.map(d => [d.state, d]));
-  MEDIAN_KEYS.forEach(k => medians[k] = d3.median(rows, d => d[k]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
   fit = computeFit(rows);
 
