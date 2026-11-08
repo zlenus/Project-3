@@ -21,7 +21,7 @@
   <div><svg id="map" viewBox="0 0 960 640" role="img" aria-label="US map of out-of-state travel for abortion care"></svg></div>
   <div id="panel" aria-live="polite"><p class="empty">Click a state on the map to see its details.</p></div>
 </div>
-<p class="note">Source: Guttmacher Institute. The District of Columbia is shown in black and excluded from the analysis: as a single city, its out-of-state travel mostly reflects short trips into Maryland or Virginia rather than a lack of local clinics.</p>
+<p class="note">Source: Guttmacher Institute. The District of Columbia is marked with a dotted circle and excluded from the analysis: as a single city, its out-of-state travel mostly reflects short trips into Maryland or Virginia rather than a lack of local clinics.</p>
 
 <section>
   <h2>Team members</h2>
@@ -164,10 +164,25 @@ Promise.all([
 
   const all = topojson.feature(us, us.objects.states).features;
   const states = all.filter(f => byName.has(f.properties.name));
-  // Draw DC in plain gray so the map has no hole, with no color or click
-  map.insert("g", "g").selectAll("path").data(all.filter(f => f.properties.name === EXCLUDED)).join("path")
-    .attr("class", "excluded").attr("d", path)
-    .append("title").text("District of Columbia (excluded from this analysis)");
+  // DC is too small to see on the map, so mark it with a dotted circle
+  // just off the coast, joined to its real location by a thin line.
+  const dc = all.find(f => f.properties.name === EXCLUDED);
+  const defs = map.append("defs");
+  const pat = defs.append("pattern").attr("id", "dots").attr("width", 4).attr("height", 4)
+    .attr("patternUnits", "userSpaceOnUse");
+  pat.append("rect").attr("width", 4).attr("height", 4).attr("fill", "#fff");
+  pat.append("circle").attr("cx", 2).attr("cy", 2).attr("r", 0.9).attr("fill", "#7a8591");
+
+  const [cx, cy] = path.centroid(dc);
+  const mx = cx + 60, my = cy + 34;   // marker position, out in the Atlantic
+  const gDC = map.append("g").attr("class", "dc-marker");
+  gDC.append("path").attr("class", "excluded").attr("d", path(dc));
+  gDC.append("line").attr("class", "dc-leader").attr("x1", cx).attr("y1", cy).attr("x2", mx - 9).attr("y2", my - 4);
+  gDC.append("circle").attr("class", "excluded").attr("cx", mx).attr("cy", my).attr("r", 9);
+  const label = gDC.append("text").attr("class", "dc-label").attr("text-anchor", "middle").attr("x", mx).attr("y", my + 23);
+  label.append("tspan").attr("x", mx).text("DC");
+  label.append("tspan").attr("x", mx).attr("dy", 13).text("(excluded)");
+  gDC.append("title").text("District of Columbia (excluded from this analysis)");
   gStates.selectAll("path").data(states).join("path")
     .attr("class", "state").attr("d", path)
     .attr("fill", d => color(byName.get(d.properties.name)[KEY]))
