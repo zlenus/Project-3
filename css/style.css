@@ -1,5 +1,4 @@
-/* Styles for the abortion-travel map page */
-
+/* Map */
 :root { --ink:#1d2733; --muted:#5b6672; --line:#d5dbe1; --bg:#ffffff; --panel:#f6f8fa; }
 * { box-sizing:border-box; }
 body { margin:0; padding:24px 32px; font-family:"Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); background:var(--bg); }
@@ -41,9 +40,9 @@ svg { width:100%; height:auto; display:block; }
 .dc-label { font-size:12px; fill:var(--muted); }
 .state.dim { opacity:.25; }
 .state.hit { fill:#8e44ad; }
-.state.sel { fill:#ffd400; opacity:1; }   /* selected state stays yellow and visible */
+.state.sel { fill:#ffd400; opacity:1; }
 
-/* Access vs. travel mini chart in the panel */
+/* Scatterplot */
 #panel h3 { font-size:.95rem; margin:10px 0 2px; padding-top:8px; border-top:1px solid var(--line); }
 #panel .mini-note { font-size:.8rem; line-height:1.35; margin:0 0 4px; }
 #mini { width:100%; height:auto; }
@@ -56,5 +55,6 @@ svg { width:100%; height:auto; display:block; }
 
 .note { font-size:.85rem; color:var(--muted); margin-top:10px; }
 section { margin-top:28px; line-height:1.55; }
+section h3 { font-size:1rem; margin:16px 0 4px; }
 section h2 { font-size:1.15rem; margin:24px 0 6px; }
 @media (max-width:820px){ .wrap{ grid-template-columns:1fr; } }

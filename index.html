@@ -28,13 +28,29 @@
   <p>Zytal Lenus</p>
 
   <h2>Dataset chosen</h2>
-  <p>I am using the Guttmacher Institute’s state-level abortion data, which covers all 50 states and the District of Columbia. Each column is a single measure from a single year, ranging from 2010 to 2020. Plan to focus on the measures that describe access to care and compare traveling across state lines. We want to ask whether limited local access pushes people to travel out of state for care. </p>
+  <p>I am using the Guttmacher Institute’s state-level abortion data, which covers all 50 states and the District of Columbia. Each column is a single measure from a single year, ranging from 2010 to 2020. I plan to focus on the measures that describe access to care and compare traveling across state lines. I want to ask whether limited local access pushes people to travel out of state for care. </p>
+
+  <h2>Design Decisions</h2>
+  <p>Given the data structure, a map visualization was the most obvious design decision for the webpage. The data is organized to focus on how each state's internal data compares to others within the nation. An alternative technique that was in contention was having an interactive bubble chart, where each bubble would represent a US state and the size of the bubble would dictate different numerical measures. This idea ultimately was scrapped because the root of the concept still relied on a map and visually might have been a bit more confusing than a standard map.</p>
+  <p>Clicking on each state and seeing its statistic was a clean interactive element to integrate into the webpage. The slide bar adds a new depth of comparison since this allows the viewer to compare the data on more of a state level; viewers can easily see where each state stands in respect to the overarching argument. Travel is shown as a percentage rather than a count, as percentage showed how severe the accessibility within each state is.</p>
+
+  <h2>Development Process</h2>
+  <p>This project from start to finish was completed by myself. The development process can be broken into 3 stages: initial exploration, map deployment, and further webpage development. It took roughly ~10 hours of work to make this page.</p>
+
+  <h3>Initial Exploration</h3>
+  <p>Typical data cleaning and exploration in Jupyter notebooks of the Guttmacher data. Graphing basic visualizations to see what elements could be used for the webpage. During this process it was clear that the webpage's argument would be displaying how abortion care is lacking in different areas; the scatterplot comparing the percentage of residents with no clinic in their county and residents that travel out of state was a great persuasive graphic to include in the final webpage.</p>
+
+  <h3>Map Deployment</h3>
+  <p>This was the most difficult aspect of the project because I have never had to create this type of rendering in D3. I had to look at a lot of example code and troubleshoot with AI code generation tools since my map wasn't rendering properly. The coloring of the borders and general map placement consumed a lot of time.</p>
+
+  <h3>Further Webpage Development</h3>
+  <p>Deployment of the comparative state measures, scatterplots, and slider bar went smoothly. Some color visualizations were continuously changed to make elements stand out depending on what interactive feature is being used. Another issue I ran into centered around the inclusion of DC on the page since it isn't a US state and its statistics were definite outliers. DC has a callout in the map due to it being a small outlier datapoint and is excluded in the overall state comparison but still included in the map as an interactive element just to show what the statistics are.</p>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
-// The map is colored by this one measure
+
 const KEY = "travel_out_2020";
 const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 
@@ -78,7 +94,7 @@ function drawPanel(){
 // ---------- Threshold slider ----------
 let threshold = 0;
 function applyThreshold(){
-  const active = threshold > 0;   // at 0 every state qualifies, so show the normal map
+  const active = threshold > 0;
   const matches = ranked.filter(d => d[KEY] >= threshold);
   gStates.selectAll("path")
     .classed("hit", d => active && byName.get(d.properties.name)[KEY] >= threshold)
@@ -90,9 +106,8 @@ function applyThreshold(){
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
-// ---------- Access vs. travel (shown in the panel) ----------
 const X_KEY = "pct_women_noclinic_2020";
-let fit = null;   // trend line and correlation, computed once after the data loads
+let fit = null;
 
 function computeFit(rows){
   const pts = rows.filter(d => d[X_KEY] != null && d[KEY] != null);
@@ -170,9 +185,7 @@ Promise.all([
   d3.csv("data/guttmacher_clean.csv", d3.autoType),
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json")
 ]).then(([rows, us]) => {
-  // DC is excluded: as a single city, its out-of-state travel mostly reflects
-  // short trips into Maryland or Virginia rather than a lack of local clinics.
-  dcRow = rows.find(d => d.state === EXCLUDED);   // kept for reference only
+  dcRow = rows.find(d => d.state === EXCLUDED);
   rows = rows.filter(d => d.state !== EXCLUDED);
   byName = new Map(rows.map(d => [d.state, d]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
@@ -180,8 +193,6 @@ Promise.all([
 
   const all = topojson.feature(us, us.objects.states).features;
   const states = all.filter(f => byName.has(f.properties.name));
-  // DC is too small to see on the map, so mark it with a dotted circle
-  // just off the coast, joined to its real location by a thin line.
   const dc = all.find(f => f.properties.name === EXCLUDED);
   const defs = map.append("defs");
   const pat = defs.append("pattern").attr("id", "dots").attr("width", 4).attr("height", 4)
@@ -190,7 +201,7 @@ Promise.all([
   pat.append("circle").attr("cx", 2).attr("cy", 2).attr("r", 0.9).attr("fill", "#7a8591");
 
   const [cx, cy] = path.centroid(dc);
-  const mx = cx + 60, my = cy + 34;   // marker position, out in the Atlantic
+  const mx = cx + 60, my = cy + 34;
   const gDC = map.append("g").attr("class", "dc-marker");
   gDC.append("path").attr("class", "excluded").attr("d", path(dc));
   gDC.append("line").attr("class", "dc-leader").attr("x1", cx).attr("y1", cy).attr("x2", mx - 9).attr("y2", my - 4);
