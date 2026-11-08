@@ -73,7 +73,7 @@ function drawPanel(){
   const r = byName.get(selected);
   const rank = ranked.findIndex(d => d.state === selected) + 1;
   const rows = DETAILS.map(m => `<tr><td>${m.label}</td>
-    <td class="v">${r[m.key] == null ? "No data" : m.fmt(r[m.key])}<small>US median: ${m.fmt(medians[m.key])}</small></td></tr>`).join("");
+    <td class="v">${r[m.key] == null ? "No data" : m.fmt(r[m.key])}<small>(median ${m.fmt(medians[m.key])})</small></td></tr>`).join("");
   panel.html(`<button class="close" aria-label="Close">×</button>
     <h2>${selected}</h2>
     <p class="big">${r[KEY]}%</p>
@@ -82,7 +82,7 @@ function drawPanel(){
     <table>${rows}</table>
     <h3>Access vs. travel</h3>
     <p class="mini-note">${accessSentence(r)}</p>
-    <svg id="mini" viewBox="0 0 340 230" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
+    <svg id="mini" viewBox="0 0 340 200" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
   panel.select(".close").on("click", () => select(null));
   drawMini();
 }
@@ -127,7 +127,7 @@ function accessSentence(r){
 }
 
 function drawMini(){
-  const W = 340, H = 230, m = {top:10, right:12, bottom:38, left:42};
+  const W = 340, H = 200, m = {top:8, right:12, bottom:34, left:42};
   const svg = d3.select("#mini");
   const x = d3.scaleLinear([0, 100], [m.left, W - m.right]);
   const y = d3.scaleLinear([0, 100], [H - m.bottom, m.top]);
