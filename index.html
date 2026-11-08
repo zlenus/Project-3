@@ -34,7 +34,7 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
-
+// The map is colored by this one measure
 const KEY = "travel_out_2020";
 const LABEL = "% of residents who traveled out of state for an abortion, 2020";
 
@@ -66,7 +66,7 @@ function drawPanel(){
     <h2>${selected}</h2>
     <p class="big">${r[KEY]}%</p>
     <p class="bigLabel">${LABEL}</p>
-    <p class="rank">Ranks <b>${rank}</b> of ${ranked.length} (1 = highest)</p>
+    <p class="rank">Ranks <b>${rank}</b> of 50 states (1 = highest)</p>
     <h3>Access vs. travel</h3>
     <p class="mini-note">${accessSentence(r)}</p>
     <svg id="mini" viewBox="0 0 340 250" role="img" aria-label="Scatterplot of clinic access versus travel, with ${selected} highlighted"></svg>`);
@@ -74,22 +74,24 @@ function drawPanel(){
   drawMini();
 }
 
+// ---------- Threshold slider ----------
 let threshold = 0;
 function applyThreshold(){
-  const active = threshold > 0;   // at 0 every state qualifies
+  const active = threshold > 0;   // at 0 every state qualifies, so show the normal map
   const matches = ranked.filter(d => d[KEY] >= threshold);
   gStates.selectAll("path")
     .classed("hit", d => active && byName.get(d.properties.name)[KEY] >= threshold)
     .classed("dim", d => active && byName.get(d.properties.name)[KEY] < threshold);
   const n = matches.length;
   d3.select("#count").html(active
-    ? `<b>${n}</b> of ${ranked.length} states ${n === 1 ? "has" : "have"} at least <b>${threshold}%</b> of residents leaving the state for abortion care`
+    ? `<b>${n}</b> of 50 states ${n === 1 ? "has" : "have"} at least <b>${threshold}%</b> of residents leaving the state for abortion care`
     : "Drag the slider to highlight states by how many residents left for abortion care");
 }
 d3.select("#threshold").on("input", function(){ threshold = +this.value; applyThreshold(); });
 
+// ---------- Access vs. travel (shown in the panel) ----------
 const X_KEY = "pct_women_noclinic_2020";
-let fit = null;   // trend line and correlation
+let fit = null;   // trend line and correlation, computed once after the data loads
 
 function computeFit(rows){
   const pts = rows.filter(d => d[X_KEY] != null && d[KEY] != null);
@@ -111,7 +113,7 @@ function accessSentence(r){
   else compare = `less than the ${expected}% the trend across states would predict`;
   const n = r.clinics_2020;
   const clinics = n == null ? "" : `${selected} has <b>${n}</b> abortion clinic${n === 1 ? "" : "s"}, and `;
-  return `${clinics}<b>${x}%</b> of its women aged 15–44 live in a county with no clinic. <b>${y}%</b> of residents traveled out of state, ${compare}. Across all states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
+  return `${clinics}<b>${x}%</b> of its women aged 15–44 live in a county with no clinic. <b>${y}%</b> of residents traveled out of state, ${compare}. Across all 50 states, the two measures are correlated at r = ${fit.r.toFixed(2)}.`;
 }
 
 function drawMini(){
@@ -127,7 +129,7 @@ function drawMini(){
     .attr("text-anchor", "middle").text("Women in a county with no clinic");
   svg.append("text").attr("class", "axis-title").attr("transform", "rotate(-90)")
     .attr("x", -(m.top + H - m.bottom) / 2).attr("y", 11).attr("text-anchor", "middle").text("Traveled out of state");
-  const x0 = Math.max(0, -fit.intercept / fit.slope);
+  const x0 = Math.max(0, -fit.intercept / fit.slope);   // start the line where it crosses 0%
   svg.append("line").attr("class", "trend")
     .attr("x1", x(x0)).attr("y1", y(fit.intercept + fit.slope * x0))
     .attr("x2", x(100)).attr("y2", y(fit.intercept + fit.slope * 100));
@@ -147,15 +149,25 @@ function select(name){
   drawPanel();
 }
 
+const EXCLUDED = "District of Columbia";
+
 Promise.all([
   d3.csv("data/guttmacher_clean.csv", d3.autoType),
   d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json")
 ]).then(([rows, us]) => {
+  // DC is excluded: as a single city, its out-of-state travel mostly reflects
+  // short trips into Maryland or Virginia rather than a lack of local clinics.
+  rows = rows.filter(d => d.state !== EXCLUDED);
   byName = new Map(rows.map(d => [d.state, d]));
   ranked = rows.slice().sort((a, b) => d3.descending(a[KEY], b[KEY]));
   fit = computeFit(rows);
 
-  const states = topojson.feature(us, us.objects.states).features.filter(f => byName.has(f.properties.name));
+  const all = topojson.feature(us, us.objects.states).features;
+  const states = all.filter(f => byName.has(f.properties.name));
+  // Draw DC in plain gray so the map has no hole, with no color or click
+  map.insert("g", "g").selectAll("path").data(all.filter(f => f.properties.name === EXCLUDED)).join("path")
+    .attr("class", "excluded").attr("d", path)
+    .append("title").text("District of Columbia (excluded from this analysis)");
   gStates.selectAll("path").data(states).join("path")
     .attr("class", "state").attr("d", path)
     .attr("fill", d => color(byName.get(d.properties.name)[KEY]))
